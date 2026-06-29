@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,11 +20,14 @@ const UNITS = ["pcs", "kg", "ltr", "dozen", "pack", "gm", "ml", "bundle"]
 export default function AddProductPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [imageLoading, setImageLoading] = useState(false)
+  const [suggestedImage, setSuggestedImage] = useState<string | null>(null)
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
   const [form, setForm] = useState({
     name: "", categoryId: "", sku: "", barcode: "",
     buyingPrice: "", sellingPrice: "", mrp: "",
     stockQty: "0", reorderLevel: "10", unit: "pcs",
-    expiryDate: "", isActive: true,
+    expiryDate: "", isActive: true, imageUrl: "",
   })
 
   const { data: categories } = useQuery<Category[]>({
@@ -33,6 +36,37 @@ export default function AddProductPage() {
   })
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
+
+  useEffect(() => {
+    if (form.name.trim().length < 3) {
+      setSuggestedImage(null)
+      return
+    }
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    
+    debounceTimer.current = setTimeout(async () => {
+      setImageLoading(true)
+      try {
+        const res = await fetch(`/api/products/image-suggest?name=${encodeURIComponent(form.name)}`)
+        const data = await res.json()
+        if (data.imageUrl) {
+          setSuggestedImage(data.imageUrl)
+          if (!form.imageUrl) {
+            set("imageUrl", data.imageUrl)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch image suggestion:", error)
+      } finally {
+        setImageLoading(false)
+      }
+    }, 800)
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    }
+  }, [form.name])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,6 +122,39 @@ export default function AddProductPage() {
               <Label className="text-xs font-medium text-gray-700">Product Name *</Label>
               <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Toor Dal" required />
             </div>
+            {(suggestedImage || form.imageUrl) && (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-gray-700">Product Image</Label>
+                <div className="flex gap-3 items-start">
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
+                    {imageLoading ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                      </div>
+                    ) : (
+                      <img src={form.imageUrl || suggestedImage!} alt="Product" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input 
+                      value={form.imageUrl} 
+                      onChange={(e) => set("imageUrl", e.target.value)} 
+                      placeholder="Or enter custom image URL"
+                      className="text-sm"
+                    />
+                    {suggestedImage && suggestedImage !== form.imageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => set("imageUrl", suggestedImage)}
+                        className="text-xs text-[#1B4332] hover:underline"
+                      >
+                        Use suggested image
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-gray-700">Category *</Label>
               <Select value={form.categoryId} onValueChange={(v) => set("categoryId", v)}>

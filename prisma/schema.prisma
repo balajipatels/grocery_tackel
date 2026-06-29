@@ -48,6 +48,11 @@ model User {
   image        String?
   emailVerified DateTime?
   role         Role       @default(STAFF)
+  status       UserStatus @default(PENDING)
+  staffId      String?    @unique
+  nickname     String?
+  shopId       String?
+  shop         Shop?      @relation("ShopUsers", fields: [shopId], references: [id])
   authProvider String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -56,6 +61,7 @@ model User {
   auditLogs    AuditLog[]
   accounts     Account[]
   sessions     Session[]
+  ownedShops   Shop[]     @relation("ShopOwner")
   @@map("users")
 }
 
@@ -64,6 +70,31 @@ enum Role {
   VENDOR
   STAFF
   INVESTOR
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Shop {
+  id        String    @id @default(cuid())
+  name      String
+  address   String?
+  gstin     String?
+  phone     String?
+  ownerId   String
+  owner     User      @relation("ShopOwner", fields: [ownerId], references: [id])
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  users     User[]    @relation("ShopUsers")
+  products  Product[]
+  bills     Bill[]
+  expenses  Expense[]
+  categories Category[]
+  @@map("shops")
 }
 
 model Investor {
@@ -84,7 +115,9 @@ model Investor {
 
 model Category {
   id             String    @id @default(cuid())
-  name           String    @unique
+  name           String
+  shopId         String?
+  shop           Shop?     @relation(fields: [shopId], references: [id])
   cgstPercent    Float     @default(0)
   sgstPercent    Float     @default(0)
   isQuickService Boolean   @default(false)
@@ -92,6 +125,7 @@ model Category {
   iconName       String    @default("shopping-cart")
   products       Product[]
   createdAt      DateTime  @default(now())
+  @@unique([name, shopId])
   @@map("categories")
 }
 
@@ -102,6 +136,8 @@ model Product {
   barcode      String?            @unique
   categoryId   String
   category     Category           @relation(fields: [categoryId], references: [id])
+  shopId       String?
+  shop         Shop?              @relation(fields: [shopId], references: [id])
   buyingPrice  Float
   sellingPrice Float
   mrp          Float
@@ -109,6 +145,7 @@ model Product {
   reorderLevel Int                @default(10)
   unit         String             @default("pcs")
   imageUrl     String?
+  isSample     Boolean            @default(false)
   isActive     Boolean            @default(true)
   expiryDate   DateTime?
   createdAt    DateTime           @default(now())
@@ -116,6 +153,7 @@ model Product {
   billItems    BillItem[]
   stockTxns    StockTransaction[]
   @@map("products")
+  @@unique([name, categoryId], map: "unique_product_per_category")
 }
 
 model Bill {

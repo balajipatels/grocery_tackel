@@ -146,6 +146,16 @@ export default function InventoryPage() {
   const products: Product[] = data?.products || []
   const totalPages: number = data?.totalPages || 1
 
+  const loadSamples = async () => {
+    try {
+      await fetch("/api/products/seed-samples", { method: "POST" })
+      qc.invalidateQueries({ queryKey: ["products"] })
+      toast.success("Sample products loaded")
+    } catch {
+      toast.error("Failed to load samples")
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -165,6 +175,22 @@ export default function InventoryPage() {
           </Link>
         </div>
       </div>
+
+      {/* Empty State Banner */}
+      {!isLoading && (data?.total || 0) === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 text-sm mb-1">No products yet</h3>
+              <p className="text-sm text-blue-700 mb-3">Load sample products to get started or add your first product manually.</p>
+              <Button onClick={loadSamples} size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-100">
+                Load Sample Products
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-white rounded-xl border border-gray-100 p-3">

@@ -3,6 +3,16 @@ import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "@/auth.config"
 
+function getAdminEmails(): string[] {
+  const adminEmails = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || ""
+  return adminEmails.split(",").map(email => email.trim()).filter(Boolean)
+}
+
+function isAdminEmail(email: string): boolean {
+  const adminEmails = getAdminEmails()
+  return adminEmails.includes(email.toLowerCase())
+}
+
 async function verifyFirebaseToken(idToken: string) {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
   if (!apiKey) {
@@ -45,7 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const fbUser = await verifyFirebaseToken(firebaseToken)
           if (!fbUser?.email) return null
 
-          const isAdmin = fbUser.email === process.env.ADMIN_EMAIL
+          const isAdmin = isAdminEmail(fbUser.email)
 
           const user = await prisma.user.upsert({
             where: { email: fbUser.email },
@@ -58,15 +68,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               name: fbUser.displayName ?? fbUser.email,
               image: fbUser.photoUrl ?? null,
               role: isAdmin ? "ADMIN" : "STAFF",
+              status: isAdmin ? "APPROVED" : "PENDING",
             },
             include: { investor: true },
           })
 
-          if (isAdmin && user.role !== "ADMIN") {
+          if (isAdmin && (user.role !== "ADMIN" || user.status !== "APPROVED")) {
             await prisma.user.update({
               where: { email: fbUser.email },
-              data: { role: "ADMIN" },
+              data: { role: "ADMIN", status: "APPROVED" },
             })
+          }
+
+          if (user.status !== "APPROVED") {
+            console.log("[Auth] User account pending approval:", user.email)
+            return null
           }
 
           return {
@@ -91,6 +107,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id
         token.role = (user as any).role
+        token.image = user.image
         token.investor = (user as any).investor ?? null
       }
       return token
@@ -98,6 +115,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
+        session.user.image = token.image as string
         ;(session.user as any).role = token.role
         ;(session.user as any).investor = token.investor
       }

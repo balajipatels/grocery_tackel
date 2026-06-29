@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 
-type User_ = { id: string; name?: string; email: string; role: string; createdAt: string }
+type User_ = { id: string; name?: string; email: string; role: string; status: string; staffId?: string; createdAt: string }
 
 const ROLE_STYLES: Record<string, string> = {
   ADMIN: "bg-red-100 text-red-700",
@@ -44,6 +44,21 @@ export default function SettingsPage() {
       qc.invalidateQueries({ queryKey: ["users"] })
     },
     onError: () => toast.error("Failed to update role"),
+  })
+
+  const approveUserMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: "approve" | "reject" }) =>
+      fetch("/api/users/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action }),
+      }).then((r) => r.json()),
+    onSuccess: (data) => {
+      if (data.error) { toast.error(data.error); return }
+      toast.success(data.action === "approve" ? "User approved" : "User rejected")
+      qc.invalidateQueries({ queryKey: ["users"] })
+    },
+    onError: () => toast.error("Failed to update user status"),
   })
 
   const shopName = process.env.NEXT_PUBLIC_SHOP_NAME || "My Grocery Store"
@@ -85,6 +100,27 @@ export default function SettingsPage() {
           <p className="text-xs text-gray-400 mt-2">
             Update these values in your <code className="bg-gray-100 px-1 rounded">.env.local</code> file.
           </p>
+          {isAdmin && (
+            <div className="pt-3 border-t border-gray-100">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  if (confirm("Delete all sample products?")) {
+                    try {
+                      await fetch("/api/products/seed-samples", { method: "DELETE" })
+                      toast.success("Sample data deleted")
+                    } catch {
+                      toast.error("Failed to delete")
+                    }
+                  }
+                }}
+                className="text-xs border-red-200 text-red-600 hover:bg-red-50"
+              >
+                Delete Sample Data
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -115,6 +151,62 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pending Users (Admin only) */}
+      {isAdmin && users?.filter(u => u.status === "PENDING").length > 0 && (
+        <Card className="rounded-xl border border-gray-100">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[#1B4332]" />
+              <CardTitle className="text-sm font-semibold">Pending User Approvals</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/80">
+                  <TableHead className="text-xs font-semibold text-gray-600">Name</TableHead>
+                  <TableHead className="text-xs font-semibold text-gray-600">Email</TableHead>
+                  <TableHead className="text-xs font-semibold text-gray-600">Requested</TableHead>
+                  <TableHead className="text-xs font-semibold text-gray-600 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users?.filter(u => u.status === "PENDING").map((user) => (
+                  <TableRow key={user.id} className="hover:bg-gray-50/50">
+                    <TableCell className="font-medium text-sm">{user.name || "—"}</TableCell>
+                    <TableCell className="text-sm text-gray-500">{user.email}</TableCell>
+                    <TableCell className="text-xs text-gray-400">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveUserMutation.mutate({ id: user.id, action: "approve" })}
+                          disabled={approveUserMutation.isPending}
+                          className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => approveUserMutation.mutate({ id: user.id, action: "reject" })}
+                          disabled={approveUserMutation.isPending}
+                          className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* User Management (Admin only) */}
       {isAdmin && (

@@ -32,7 +32,11 @@ export default function LoginPage() {
       const idToken = await result.user.getIdToken()
       const err = await firebaseSignInAndCreateSession(idToken)
       if (err) {
-        setError("Access denied. You are not authorised to use this system.")
+        if (err.includes("CredentialsSignin") || err.includes("Configuration")) {
+          setError("Your account is pending admin approval. Please contact the administrator.")
+        } else {
+          setError("Access denied. You are not authorised to use this system.")
+        }
         setLoading(null)
       } else {
         router.push("/dashboard")
@@ -57,7 +61,11 @@ export default function LoginPage() {
       const idToken = await result.user.getIdToken()
       const err = await firebaseSignInAndCreateSession(idToken)
       if (err) {
-        setError("Access denied. You are not authorised to use this system.")
+        if (err.includes("CredentialsSignin") || err.includes("Configuration")) {
+          setError("Your account is pending admin approval. Please contact the administrator.")
+        } else {
+          setError("Access denied. You are not authorised to use this system.")
+        }
         setLoading(null)
       } else {
         router.push("/dashboard")

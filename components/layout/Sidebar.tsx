@@ -39,6 +39,7 @@ const navItems = [
     ],
   },
   { href: "/reports", label: "Reports", icon: BarChart2 },
+  { href: "/profile", label: "My Profile", icon: Store },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 

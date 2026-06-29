@@ -28,12 +28,12 @@ export async function GET(req: NextRequest) {
 
     const result = investors.map((inv) => {
       const sharePercent = totalInvestment > 0 ? (inv.investedAmount / totalInvestment) * 100 : 0
-      const revenueShare = inv.billShares.reduce((s, b) => s + b.revenueShare, 0)
-      const cogShare = inv.billShares.reduce((s, b) => s + b.cogShare, 0)
-      const grossProfitShare = inv.billShares.reduce((s, b) => s + b.profitShare, 0)
-      const expenseShare = (totalExpenses * sharePercent) / 100
+      const revenueShare = inv.billShares.reduce((s, b) => s + (b.revenueShare || 0), 0)
+      const cogShare = inv.billShares.reduce((s, b) => s + (b.cogShare || 0), 0)
+      const grossProfitShare = inv.billShares.reduce((s, b) => s + (b.profitShare || 0), 0)
+      const expenseShare = totalExpenses > 0 && sharePercent > 0 ? (totalExpenses * sharePercent) / 100 : 0
       const netProfit = grossProfitShare - expenseShare
-      const roi = inv.investedAmount > 0 ? (netProfit / inv.investedAmount) * 100 : 0
+      const roi = inv.investedAmount > 0 && netProfit !== 0 ? (netProfit / inv.investedAmount) * 100 : 0
       return {
         investor: inv,
         sharePercent,
