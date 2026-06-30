@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic'
+
 import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -19,10 +21,21 @@ const ROLE_COLORS: Record<string, string> = {
 }
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession()
+  const sessionData = useSession()
+  const session = sessionData?.data
+  const status = sessionData?.status
+  const update = sessionData?.update
   const qc = useQueryClient()
   const [nickname, setNickname] = useState((session?.user as any)?.nickname || "")
   const [editing, setEditing] = useState(false)
+
+  if (!sessionData || status === "loading") {
+    return <div className="flex items-center justify-center h-96">Loading...</div>
+  }
+
+  if (!session) {
+    return <div className="flex items-center justify-center h-96">Please log in to view your profile</div>
+  }
 
   const updateMutation = useMutation({
     mutationFn: (data: { nickname: string }) =>

@@ -111,7 +111,7 @@ export default function FinancePage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="createdAt" tickFormatter={(v) => new Date(v).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => formatINR(v)} />
+                  <Tooltip formatter={(v) => formatINR(Number(v))} />
                   <Legend />
                   <Line type="monotone" dataKey="_sum.grandTotal" name="Revenue" stroke="#1B4332" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="_sum.totalCogs" name="COGS" stroke="#DC2626" strokeWidth={2} dot={false} />
@@ -132,10 +132,10 @@ export default function FinancePage() {
               {revenueSplit.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={revenueSplit} cx="50%" cy="50%" outerRadius={55} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                    <Pie data={revenueSplit} cx="50%" cy="50%" outerRadius={55} dataKey="value" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
                       {revenueSplit.map((_, i) => <Cell key={i} fill={INVESTOR_COLORS[i]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => formatINR(v)} />
+                    <Tooltip formatter={(v) => formatINR(Number(v))} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (

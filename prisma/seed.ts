@@ -12,33 +12,16 @@ async function main() {
   console.log("🌱 Seeding database...")
 
   // Categories
-  const categories = await Promise.all([
-    prisma.category.upsert({
-      where: { name: "Grocery & Staples" },
-      update: {},
-      create: { name: "Grocery & Staples", cgstPercent: 0, sgstPercent: 0, colorHex: "#1B4332", isQuickService: false },
-    }),
-    prisma.category.upsert({
-      where: { name: "Snacks & Beverages" },
-      update: {},
-      create: { name: "Snacks & Beverages", cgstPercent: 9, sgstPercent: 9, colorHex: "#BA7517", isQuickService: false },
-    }),
-    prisma.category.upsert({
-      where: { name: "Personal Care" },
-      update: {},
-      create: { name: "Personal Care", cgstPercent: 9, sgstPercent: 9, colorHex: "#993556", isQuickService: false },
-    }),
-    prisma.category.upsert({
-      where: { name: "Tea Corner" },
-      update: {},
-      create: { name: "Tea Corner", cgstPercent: 2.5, sgstPercent: 2.5, colorHex: "#378ADD", isQuickService: true },
-    }),
-    prisma.category.upsert({
-      where: { name: "Dairy" },
-      update: {},
-      create: { name: "Dairy", cgstPercent: 0, sgstPercent: 0, colorHex: "#534AB7", isQuickService: false },
-    }),
-  ])
+  await prisma.category.createMany({
+    data: [
+      { name: "Grocery & Staples", cgstPercent: 0, sgstPercent: 0, colorHex: "#1B4332", isQuickService: false },
+      { name: "Snacks & Beverages", cgstPercent: 9, sgstPercent: 9, colorHex: "#BA7517", isQuickService: false },
+      { name: "Personal Care", cgstPercent: 9, sgstPercent: 9, colorHex: "#993556", isQuickService: false },
+      { name: "Tea Corner", cgstPercent: 2.5, sgstPercent: 2.5, colorHex: "#378ADD", isQuickService: true },
+      { name: "Dairy", cgstPercent: 0, sgstPercent: 0, colorHex: "#534AB7", isQuickService: false },
+    ],
+    skipDuplicates: true,
+  })
 
   console.log("✅ Categories created")
 

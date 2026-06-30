@@ -153,7 +153,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Pending Users (Admin only) */}
-      {isAdmin && users?.filter(u => u.status === "PENDING").length > 0 && (
+      {isAdmin && (users?.filter(u => u.status === "PENDING").length ?? 0) > 0 && (
         <Card className="rounded-xl border border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">

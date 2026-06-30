@@ -178,7 +178,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="createdAt" tickFormatter={(v) => new Date(v).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => formatINR(v)} />
+                  <Tooltip formatter={(v) => formatINR(Number(v))} />
                   <Legend />
                   <Line type="monotone" dataKey="_sum.grandTotal" name="Revenue" stroke="#1B4332" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="_sum.totalCogs" name="COGS" stroke="#52B788" strokeWidth={2} dot={false} />
@@ -198,10 +198,10 @@ export default function DashboardPage() {
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
                     {pieData.map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => formatINR(v)} />
+                  <Tooltip formatter={(v) => formatINR(Number(v))} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                 <BarChart data={stats.topProducts} layout="vertical">
                   <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(1)}k`} />
                   <YAxis type="category" dataKey="productName" tick={{ fontSize: 10 }} width={80} />
-                  <Tooltip formatter={(v: number) => formatINR(v)} />
+                  <Tooltip formatter={(v) => formatINR(Number(v))} />
                   <Bar dataKey="_sum.lineTotal" fill="#1B4332" radius={[0, 3, 3, 0]} name="Revenue" />
                 </BarChart>
               </ResponsiveContainer>
